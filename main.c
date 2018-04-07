@@ -445,9 +445,102 @@ void animate(void)
 	}
 }
 
+typedef struct {
+	int filecnt;
+	int * shown;
+	int files_shown;
+} RandomShow;
+
+RandomShow random_show;
+
+void init_random_show(RandomShow * show, int filecnt) {
+	printf("Initializing random show to filecnt of %d\n", filecnt);
+	if (show == NULL) {
+		error(EXIT_FAILURE, 0, "Bad call to random show");
+	}
+	// if (show->filecnt == filecnt) {
+	// 	return;
+	// }
+	show->filecnt = filecnt;
+	if (show->shown) {
+		free(show->shown);
+	}
+	show->files_shown = 0;
+	show->shown = NULL;
+	show->shown = emalloc(filecnt * sizeof(int));
+	for (int i = 0; i < filecnt; ++ i) {
+		show->shown[i] = 0;
+	}
+	printf("Finished init\n");
+}
+
+// STOLEN FROM https://stackoverflow.com/questions/2509679/how-to-generate-a-random-integer-number-from-within-a-range
+unsigned int rand_interval(unsigned int min, unsigned int max)
+{
+    int r;
+    const unsigned int range = 1 + max - min;
+    const unsigned int buckets = RAND_MAX / range;
+    const unsigned int limit = buckets * range;
+
+    /* Create equal size buckets all in a row, then fire randomly towards
+     * the buckets until you land in one of them. All buckets are equally
+     * likely. If you land off the end of the line of buckets, try again. */
+    do
+    {
+        r = rand();
+    } while (r >= limit);
+
+    unsigned int result = min + (r / buckets);
+    // printf("new random from %d - %d: %d\n", min, max, result);
+    return result;
+}
+
 void slideshow(void)
 {
-	load_image(fileidx + 1 < filecnt ? fileidx + 1 : 0);
+	if (random_show.filecnt != filecnt
+		|| random_show.files_shown >= random_show.filecnt)
+	{
+		printf("Need to initialize random_show\n");
+		init_random_show(&random_show, filecnt);
+	}
+
+	int next_index = rand_interval(0, filecnt);
+	int max_tries = filecnt;
+	while (random_show.shown[next_index]) {
+		next_index = rand_interval(0, filecnt);
+		max_tries -= 1;
+		if (max_tries < 0) {
+			int i = 0;
+			for (i = 0; i < filecnt; ++ i) {
+				if (!random_show.shown[i]) {
+					next_index = i;
+					break;
+				}
+			}
+			if (i == filecnt) {
+				printf("All done");
+				int bad = 0;
+				for (int j = 0; j < filecnt; ++ j) {
+					if (!random_show.shown[j]) {
+						printf("WAIT, NOT SHOWN %d", j);
+						bad = 1;
+					}
+				}
+				if (bad) {
+					error(EXIT_FAILURE, 0, "THE END");
+				}
+				random_show.filecnt = 0;
+				slideshow();
+				return;
+			}
+			break;
+		}
+	}
+	printf("next_index[%d] = %d\n", random_show.files_shown, next_index);
+	random_show.shown[next_index] = 1;
+	load_image(next_index);
+	random_show.files_shown += 1;
+	// load_image(fileidx + 1 < filecnt ? fileidx + 1 : 0);
 	redraw();
 }
 
@@ -803,6 +896,7 @@ void setup_signal(int sig, void (*handler)(int sig))
 
 int main(int argc, char **argv)
 {
+	init_random_show(&random_show, 0);
 	int i, start;
 	size_t n;
 	ssize_t len;
