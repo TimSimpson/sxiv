@@ -1,3 +1,11 @@
+**NOTE**
+
+This is a simple fork that hacks in the slide show so it's random.
+There's no plans to extend it or do anything else since I don't like
+C but I'm checking it into GitHub because I'm a civilized human being.
+Also I stole some code from Stack Overflow and also it's licensed under
+GNU I guess. In other words this is the best thing I've ever done. ~ Tim
+
 ![sxiv](http://muennich.github.com/sxiv/img/logo.png "sxiv")
 
 **Simple X Image Viewer**
